@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSB-Vision — AI Detection &amp; Decision Support for Rice Sheath Blight</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg: #17241a;
+  --bg-panel: #1f3122;
+  --bg-panel-2: #28402a;
+  --green: #7fa35c;
+  --green-bright: #a3c97c;
+  --tan: #d8b978;
+  --rust: #b5602f;
+  --rust-dim: #8a4a29;
+  --cream: #f3efe3;
+  --cream-dim: #b9bfa9;
+  --line: rgba(243,239,227,0.12);
+  --line-strong: rgba(243,239,227,0.22);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+*{ box-sizing: border-box; margin:0; padding:0; }
+html{ scroll-behavior: smooth; }
+body{
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(127,163,92,0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(181,96,47,0.10), transparent 55%);
+}
+
+::selection{ background: var(--rust); color: var(--cream); }
+
+a{ color: inherit; }
+:focus-visible{ outline: 2px solid var(--tan); outline-offset: 3px; }
+
+img,svg{ display:block; max-width:100%; }
+
+.wrap{ max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+/* ---------- NAV ---------- */
+header.nav{
+  position: fixed; top:0; left:0; right:0; z-index: 100;
+  background: rgba(23,36,26,0.78);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner{
+  max-width: 1180px; margin: 0 auto; padding: 18px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.brand{ display:flex; align-items:center; gap:10px; font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.04em; }
+.brand-mark{ width:22px; height:22px; flex-shrink:0; }
+.brand b{ color: var(--cream); font-weight: 600; }
+.brand span{ color: var(--cream-dim); }
+nav.links{ display:flex; gap: 28px; font-size: 14px; }
+nav.links a{ text-decoration:none; color: var(--cream-dim); transition: color .2s ease; position:relative; }
+nav.links a:hover{ color: var(--tan); }
+.nav-toggle{ display:none; }
+
+@media (max-width: 820px){
+  nav.links{ display:none; }
+}
+
+/* ---------- HERO ---------- */
+.hero{
+  padding: 168px 0 90px;
+  position: relative;
+}
+.eyebrow{
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tan);
+  display:flex; align-items:center; gap:10px;
+  margin-bottom: 22px;
+}
+.eyebrow::before{
+  content:""; width:26px; height:1px; background: var(--tan);
+}
+.hero-grid{
+  display:grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items:center;
+}
+h1{
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 4.6vw, 3.85rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+}
+h1 em{ font-style: italic; color: var(--green-bright); font-weight: 500; }
+.hero p.lede{
+  margin-top: 22px;
+  font-size: 17.5px;
+  color: var(--cream-dim);
+  max-width: 46ch;
+}
+.hero-cta{ display:flex; gap:14px; margin-top: 34px; flex-wrap: wrap; }
+.btn{
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  padding: 13px 22px;
+  border-radius: 3px;
+  text-decoration:none;
+  letter-spacing: 0.02em;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary{ background: var(--rust); color: var(--cream); border: 1px solid var(--rust); }
+.btn-primary:hover{ background: #c46a37; transform: translateY(-1px); }
+.btn-ghost{ background: transparent; color: var(--cream); border: 1px solid var(--line-strong); }
+.btn-ghost:hover{ border-color: var(--tan); color: var(--tan); }
+
+/* stat strip */
+.stat-strip{
+  margin-top: 64px;
+  display:grid; grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  padding-top: 26px;
+}
+.stat-strip div{ padding-right: 20px; }
+.stat-num{ font-family: var(--font-mono); font-size: 1.7rem; color: var(--green-bright); }
+.stat-label{ font-size: 13px; color: var(--cream-dim); margin-top: 4px; }
+
+/* ---------- SIGNATURE SCANNER VISUAL ---------- */
+.scanner{
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-panel), #1a2a1c);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 22px;
+  box-shadow: 0 30px 60px -25px rgba(0,0,0,0.55);
+}
+.scanner-head{
+  display:flex; justify-content:space-between; align-items:center;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--cream-dim);
+  margin-bottom: 14px; letter-spacing: 0.04em;
+}
+.scanner-head .dot{ width:7px; height:7px; border-radius:50%; background: var(--green-bright); display:inline-block; margin-right:6px; animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+.scan-frame{
+  position:relative; width:100%; aspect-ratio: 600/560;
+  overflow:hidden; border-radius: 3px; background: #142218;
+  border: 1px solid var(--line);
+}
+.scan-frame svg{ width:100%; height:100%; display:block; }
+
+.scanline{
+  position:absolute; left:0; right:0; height:64px; top:0;
+  background: linear-gradient(180deg, transparent, rgba(163,201,124,0.28), rgba(163,201,124,0.55) 92%, transparent);
+  animation: sweep 8s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes sweep{
+  0%{ transform: translateY(-64px); }
+  100%{ transform: translateY(560px); }
+}
+
+.box{
+  position:absolute; border: 1.5px dashed var(--tan);
+  border-radius: 2px; opacity:0;
+  background: rgba(216,185,120,0.06);
+}
+.box .tag{
+  position:absolute; top:-22px; left:-1.5px;
+  background: var(--tan); color: #1b2a1e;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight:500;
+  padding: 2px 6px; white-space:nowrap; border-radius:2px;
+}
+.box1{ top: 26%; left: 40%; width: 108px; height: 58px; animation: reveal1 8s linear infinite; }
+.box2{ top: 52%; left: 22%; width: 96px; height: 50px; animation: reveal2 8s linear infinite; }
+.box3{ top: 70%; left: 46%; width: 84px; height: 46px; animation: reveal3 8s linear infinite; }
+
+@keyframes reveal1{ 0%,32%{opacity:0;} 38%,88%{opacity:1;} 96%,100%{opacity:0;} }
+@keyframes reveal2{ 0%,58%{opacity:0;} 64%,88%{opacity:1;} 96%,100%{opacity:0;} }
+@keyframes reveal3{ 0%,78%{opacity:0;} 84%,88%{opacity:1;} 96%,100%{opacity:0;} }
+
+.scanner-foot{
+  display:flex; justify-content:space-between; margin-top: 14px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--cream-dim);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .scanline, .box, .scanner-head .dot{ animation: none !important; }
+  .box1, .box2, .box3{ opacity: 1; }
+}
+
+@media (max-width: 900px){
+  .hero-grid{ grid-template-columns: 1fr; }
+  .stat-strip{ grid-template-columns: 1fr 1fr; row-gap: 22px; }
+}
+
+/* ---------- SECTION GENERIC ---------- */
+section{ padding: 108px 0; border-top: 1px solid var(--line); }
+.section-head{ max-width: 640px; margin-bottom: 56px; }
+.section-head .eyebrow{ margin-bottom: 16px; }
+h2{
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: -0.01em;
+}
+h2 + p{ margin-top: 16px; color: var(--cream-dim); font-size: 16px; max-width: 60ch; }
+
+.reveal{ opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.in-view{ opacity: 1; transform: translateY(0); }
+
+/* ---------- PROBLEM ---------- */
+.problem-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+.problem-grid p{ color: var(--cream-dim); font-size: 15.5px; margin-bottom: 16px; }
+.problem-grid p strong{ color: var(--cream); font-weight: 500; }
+.symptom-card{
+  background: var(--bg-panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 26px 28px;
+}
+.symptom-card h3{
+  font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--tan); margin-bottom: 16px;
+}
+.symptom-list{ list-style:none; }
+.symptom-list li{
+  display:flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14.5px; color: var(--cream-dim);
+}
+.symptom-list li:first-child{ border-top:none; }
+.symptom-list li::before{ content:"—"; color: var(--rust); flex-shrink:0; }
+
+@media (max-width: 860px){ .problem-grid{ grid-template-columns: 1fr; } }
+
+/* ---------- PILLARS ---------- */
+.pillars{ display:grid; grid-template-columns: repeat(3,1fr); gap: 26px; }
+.pillar{
+  background: var(--bg-panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 30px 26px; transition: border-color .2s ease, transform .2s ease;
+}
+.pillar:hover{ border-color: var(--line-strong); transform: translateY(-3px); }
+.pillar .num{ font-family: var(--font-mono); font-size: 12px; color: var(--rust); letter-spacing: 0.06em; }
+.pillar h3{ font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; margin-top: 14px; color: var(--cream); }
+.pillar p{ font-size: 14.5px; color: var(--cream-dim); margin-top: 12px; }
+
+@media (max-width: 860px){ .pillars{ grid-template-columns: 1fr; } }
+
+/* ---------- PIPELINE ---------- */
+.pipeline{ position: relative; }
+.pipeline::before{
+  content:""; position:absolute; left: 27px; top: 8px; bottom: 8px; width:1px;
+  background: linear-gradient(var(--line-strong), transparent 96%);
+}
+.stage{
+  display:grid; grid-template-columns: 56px 1fr; gap: 26px;
+  padding: 26px 0; position: relative;
+}
+.stage-num{
+  font-family: var(--font-mono); font-size: 13px; color: var(--bg);
+  background: var(--green-bright); width: 40px; height:40px; border-radius: 50%;
+  display:flex; align-items:center; justify-content:center; z-index:1;
+  border: 4px solid var(--bg);
+}
+.stage-body h3{ font-family: var(--font-display); font-size: 1.2rem; font-weight:600; color: var(--cream); }
+.stage-body .stage-tag{ font-family: var(--font-mono); font-size: 11px; color: var(--tan); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; display:block; }
+.stage-body p{ font-size: 14.5px; color: var(--cream-dim); margin-top: 8px; max-width: 62ch; }
+
+/* ---------- SEVERITY / DECISION SUPPORT ---------- */
+.dss-grid{ display:grid; grid-template-columns: 1fr; gap: 40px; }
+.gauge-wrap{
+  background: var(--bg-panel); border:1px solid var(--line); border-radius: 8px; padding: 34px;
+}
+.gauge-bar{
+  height: 14px; border-radius: 8px; overflow:hidden; display:flex;
+  border: 1px solid var(--line-strong);
+}
+.gauge-bar span{ flex:1; }
+.g1{ background: var(--green); } .g2{ background: var(--tan); } .g3{ background: var(--rust); } .g4{ background: #7a3418; }
+.gauge-labels{ display:flex; justify-content:space-between; margin-top: 10px; font-family: var(--font-mono); font-size: 11px; color: var(--cream-dim); }
+
+.risk-cards{ display:grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-top: 30px; }
+.risk-card{ border-radius: 6px; padding: 20px; border: 1px solid var(--line); background: rgba(0,0,0,0.15); }
+.risk-card .swatch{ width: 18px; height:18px; border-radius: 3px; margin-bottom: 14px; }
+.risk-card h4{ font-family: var(--font-mono); font-size: 13px; letter-spacing:0.03em; color: var(--cream); }
+.risk-card p{ font-size: 13.5px; color: var(--cream-dim); margin-top: 10px; }
+
+@media (max-width: 860px){ .risk-cards{ grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px){ .risk-cards{ grid-template-columns: 1fr; } }
+
+/* ---------- METHOD TABLE ---------- */
+.method-list{ display:grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow:hidden; }
+.method-item{ background: var(--bg-panel); padding: 26px 28px; }
+.method-item h4{ font-family: var(--font-mono); font-size: 12px; color: var(--tan); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px; }
+.method-item p{ font-size: 14.5px; color: var(--cream-dim); }
+
+@media (max-width: 760px){ .method-list{ grid-template-columns: 1fr; } }
+
+/* ---------- IMPACT ---------- */
+.impact-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.impact-card{ padding: 24px 0; border-top: 1px solid var(--line-strong); }
+.impact-card .icon{ width: 30px; height:30px; margin-bottom: 18px; color: var(--green-bright); }
+.impact-card h4{ font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--cream); }
+.impact-card p{ font-size: 13.8px; color: var(--cream-dim); margin-top: 10px; }
+
+@media (max-width: 860px){ .impact-grid{ grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px){ .impact-grid{ grid-template-columns: 1fr; } }
+
+/* ---------- TRY THE SCANNER (QR) ---------- */
+.try-grid{ display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items:center; }
+.try-steps{ list-style:none; counter-reset: step; margin-top: 8px; }
+.try-steps li{
+  counter-increment: step;
+  display:flex; gap:16px; padding: 14px 0; border-top: 1px solid var(--line);
+  font-size: 15px; color: var(--cream-dim);
+}
+.try-steps li::before{
+  content: counter(step); font-family: var(--font-mono); font-size: 12.5px; color: var(--rust);
+  width: 22px; flex-shrink:0; padding-top: 2px;
+}
+.try-steps li strong{ color: var(--cream); font-weight: 500; }
+.try-cta{ margin-top: 30px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+.try-note{ font-size: 13px; color: var(--cream-dim); opacity: .8; }
+
+.qr-card{
+  background: linear-gradient(180deg, var(--bg-panel), #1a2a1c);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 30px 26px 24px; text-align:center;
+  box-shadow: 0 30px 60px -25px rgba(0,0,0,0.55);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:100%; max-width:380px; justify-self:center; margin:0 auto;
+}
+.qr-frame{ position:relative; display:block; width:fit-content; margin:0 auto; padding: 22px; }
+.qr-frame img, .qr-frame svg{
+  display:block; margin:0 auto; width:240px; max-width:100%; height:auto; aspect-ratio:1/1;
+  background:#fff; padding: 12px; border-radius: 2px;
+}
+.qr-frame i{ position:absolute; width:22px; height:22px; border: 2px solid var(--tan); }
+.qr-frame i:nth-child(1){ top:0; left:0; border-right:none; border-bottom:none; }
+.qr-frame i:nth-child(2){ top:0; right:0; border-left:none; border-bottom:none; }
+.qr-frame i:nth-child(3){ bottom:0; left:0; border-right:none; border-top:none; }
+.qr-frame i:nth-child(4){ bottom:0; right:0; border-left:none; border-top:none; }
+.qr-title{ font-family: var(--font-display); font-size: 1.15rem; font-weight:600; margin-top: 14px; color: var(--cream); }
+.qr-sub{ font-family: var(--font-mono); font-size: 11.5px; color: var(--cream-dim); margin-top: 6px; letter-spacing: 0.04em; }
+
+@media (max-width: 900px){ .try-grid{ grid-template-columns: 1fr; gap: 40px; } }
+
+/* ---------- FOOTER ---------- */
+footer{ padding: 70px 0 50px; border-top: 1px solid var(--line); }
+.footer-grid{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap: wrap; gap: 30px; }
+footer .brand{ margin-bottom: 14px; }
+footer p{ color: var(--cream-dim); font-size: 13.8px; max-width: 42ch; }
+.footer-note{ font-family: var(--font-mono); font-size: 11.5px; color: var(--cream-dim); opacity: 0.7; }
+
+@media (max-width: 700px){
+  .hero{ padding-top: 140px; }
+  section{ padding: 76px 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="#7fa35c"/>
+        <ellipse cx="12" cy="14" rx="2.4" ry="3.4" fill="#d8b978" opacity="0.85"/>
+      </svg>
+      <b>RSB&#8209;Vision</b><span>&nbsp;/ rice sheath blight AI</span>
+    </div>
+    <nav class="links">
+      <a href="#problem">The Problem</a>
+      <a href="#system">System</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#decision">Decision Support</a>
+      <a href="#impact">Impact</a>
+      <a href="#try">Try the Scanner</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero wrap" style="border-top:none;">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Applied AI for Plant Pathology</div>
+        <h1>Seeing sheath&nbsp;blight <em>before</em><br>it takes the canopy.</h1>
+        <p class="lede">A research project developing an AI-based image recognition and decision support system that detects, grades, and helps manage <em style="font-style:normal;color:var(--cream);">Rice Sheath Blight</em> — turning a photo from the field into an early warning and a clear next action.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#system">Explore the system →</a>
+          <a class="btn btn-ghost" href="#pipeline">See the pipeline</a>
+          <a class="btn btn-ghost" href="#try">Try the scanner</a>
+        </div>
+        <div class="stat-strip">
+          <div>
+            <div class="stat-num">5–50%</div>
+            <div class="stat-label">Yield loss reported in severe, untreated outbreaks</div>
+          </div>
+          <div>
+            <div class="stat-num">R. solani</div>
+            <div class="stat-label">Soil-borne fungal pathogen behind the disease</div>
+          </div>
+          <div>
+            <div class="stat-num">Canopy-level</div>
+            <div class="stat-label">Where symptoms hide longest from manual scouting</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scanner" aria-hidden="false">
+        <div class="scanner-head">
+          <span><span class="dot"></span>LIVE MODEL PREVIEW</span>
+          <span>rice_sheath_003.jpg</span>
+        </div>
+        <div class="scan-frame">
+          <svg viewBox="0 0 600 560" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="stemGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#3c5a34"/>
+                <stop offset="55%" stop-color="#6f9450"/>
+                <stop offset="100%" stop-color="#496b3c"/>
+              </linearGradient>
+              <linearGradient id="leafGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#8fb768"/>
+                <stop offset="100%" stop-color="#587c3f"/>
+              </linearGradient>
+            </defs>
+            <rect width="600" height="560" fill="#142218"/>
+            <!-- background stalks -->
+            <path d="M120 560 C110 420 150 300 100 160" stroke="#2b4127" stroke-width="14" fill="none" opacity="0.55"/>
+            <path d="M500 560 C520 430 470 320 510 170" stroke="#2b4127" stroke-width="16" fill="none" opacity="0.55"/>
+            <!-- main sheath/stem -->
+            <path d="M280 560 C270 420 300 300 285 60" stroke="url(#stemGrad)" stroke-width="46" fill="none" stroke-linecap="round"/>
+            <path d="M340 560 C356 430 330 300 348 80" stroke="url(#stemGrad)" stroke-width="34" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <!-- leaves -->
+            <path d="M285 220 C 200 190 140 150 90 90 C 190 110 260 150 300 210 Z" fill="url(#leafGrad)"/>
+            <path d="M340 260 C 430 220 480 170 520 100 C 430 130 370 170 335 240 Z" fill="url(#leafGrad)" opacity="0.95"/>
+            <path d="M292 130 C 250 70 230 30 232 0 C 280 30 300 70 300 130 Z" fill="url(#leafGrad)"/>
+
+            <!-- lesions: irregular greyish-tan blotches with rust margins -->
+            <g>
+              <path d="M300 210 q28 -10 46 10 q14 16 -2 30 q-24 18 -46 2 q-16 -14 2 -42 z" fill="#d8b978" stroke="#8a4a29" stroke-width="2" opacity="0.92"/>
+              <path d="M255 300 q24 -14 40 4 q10 14 -6 26 q-20 16 -38 2 q-12 -12 4 -32 z" fill="#c9ab6c" stroke="#8a4a29" stroke-width="2" opacity="0.9"/>
+              <path d="M320 400 q22 -8 34 10 q8 14 -8 24 q-18 12 -32 -2 q-10 -12 6 -32 z" fill="#d8b978" stroke="#8a4a29" stroke-width="2" opacity="0.9"/>
+            </g>
+          </svg>
+          <div class="scanline"></div>
+          <div class="box box1"><span class="tag">lesion · 94%</span></div>
+          <div class="box box2"><span class="tag">lesion · 88%</span></div>
+          <div class="box box3"><span class="tag">lesion · 91%</span></div>
+        </div>
+        <div class="scanner-foot">
+          <span>MODEL: CNN / transfer-learned</span>
+          <span>STATUS: scanning…</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="problem" class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">The Problem</div>
+      <h2>A disease that spreads faster than it's noticed</h2>
+      <p>Rice Sheath Blight, caused by the fungus <em style="font-style:normal;color:var(--cream);">Rhizoctonia solani</em>, thrives in the warm, humid microclimate of a dense rice canopy — precisely the conditions modern high-yield, closely-spaced varieties create.</p>
+    </div>
+    <div class="problem-grid">
+      <div>
+        <p><strong>Diagnosis today is manual.</strong> Farmers and extension workers walk the field and inspect leaf sheaths by eye. It's slow, subjective, and depends on experience that isn't always available where it's needed most.</p>
+        <p><strong>Symptoms start low and hidden.</strong> Early lesions appear near the waterline on lower sheaths, inside the canopy — the last place a quick visual survey looks, and the first place infection takes hold.</p>
+        <p><strong>By the time it's obvious, it's costly.</strong> Once lesions climb the plant and merge, yield and grain quality losses follow — and the response window for efficient, targeted treatment has already narrowed.</p>
+      </div>
+      <div class="symptom-card">
+        <h3>Field-observable symptoms</h3>
+        <ul class="symptom-list">
+          <li>Oval, water-soaked lesions on lower leaf sheaths, greenish-grey at onset</li>
+          <li>Lesions enlarge and merge into irregular blotches with straw-tan centers</li>
+          <li>Margins darken to a reddish-brown border as infection matures</li>
+          <li>Progression up the sheath and onto the flag leaf under humid, crowded canopies</li>
+          <li>Uneven distribution across a field, tied closely to canopy density and moisture</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEM / PILLARS -->
+  <section id="system" class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">The System</div>
+      <h2>Three parts, one loop: see, grade, act</h2>
+      <p>RSB-Vision is built as a closed loop between image-based recognition and practical, field-ready guidance — not a classifier alone, but a decision layer on top of it.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="num">01 / RECOGNITION</div>
+        <h3>Image Recognition Engine</h3>
+        <p>A deep learning model trained to localize sheath blight lesions in field photos, distinguish them from similar-looking stresses, and score detection confidence per lesion.</p>
+      </div>
+      <div class="pillar">
+        <div class="num">02 / DECISION</div>
+        <h3>Decision Support Layer</h3>
+        <p>Converts raw detections into a severity grade and a recommended action — from continued monitoring to targeted fungicide timing — factoring in growth stage and conditions.</p>
+      </div>
+      <div class="pillar">
+        <div class="num">03 / INTERFACE</div>
+        <h3>Field Interface</h3>
+        <p>A simple capture-and-report flow for farmers and agronomists, with history kept over the season so spread and recurrence can be tracked field by field.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section id="pipeline" class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">How It Works</div>
+      <h2>From a photo to a recommendation</h2>
+      <p>Each capture moves through the same six stages, whether it comes from a farmer's phone, a fixed field camera, or a survey drone.</p>
+    </div>
+    <div class="pipeline">
+      <div class="stage">
+        <div class="stage-num">01</div>
+        <div class="stage-body">
+          <span class="stage-tag">Capture</span>
+          <h3>Image acquisition</h3>
+          <p>Photos of the lower canopy and leaf sheaths are captured in the field via smartphone, fixed camera, or aerial survey, at a resolution and angle the model is trained to expect.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">02</div>
+        <div class="stage-body">
+          <span class="stage-tag">Clean</span>
+          <h3>Preprocessing</h3>
+          <p>Images are normalized for lighting and resolution, backgrounds segmented from plant tissue, and augmented during training to cover the range of glare, shade, and humidity seen in real fields.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">03</div>
+        <div class="stage-body">
+          <span class="stage-tag">Detect</span>
+          <h3>Lesion detection &amp; classification</h3>
+          <p>A convolutional neural network, trained with transfer learning on annotated field imagery, localizes candidate lesions and classifies each as sheath blight or another cause of leaf discoloration.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">04</div>
+        <div class="stage-body">
+          <span class="stage-tag">Quantify</span>
+          <h3>Severity grading</h3>
+          <p>Detected lesion area is measured against total sheath/leaf area and mapped onto a standard severity scale, giving a consistent number in place of a subjective visual estimate.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">05</div>
+        <div class="stage-body">
+          <span class="stage-tag">Decide</span>
+          <h3>Decision support engine</h3>
+          <p>Severity is combined with crop growth stage and recent humidity/weather conditions to produce a risk level and a corresponding recommendation — not just a diagnosis.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">06</div>
+        <div class="stage-body">
+          <span class="stage-tag">Act</span>
+          <h3>Farmer &amp; agronomist interface</h3>
+          <p>Results, severity trend, and the recommended action are delivered through a simple dashboard, with the field's history logged for the rest of the season.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DECISION SUPPORT -->
+  <section id="decision" class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">Decision Support</div>
+      <h2>Severity in, action out</h2>
+      <p>The system's output is only useful if it's actionable. Every detection resolves to one of four risk levels, each tied to a concrete, proportionate response.</p>
+    </div>
+    <div class="dss-grid">
+      <div class="gauge-wrap">
+        <div class="gauge-bar">
+          <span class="g1" style="flex:2"></span>
+          <span class="g2" style="flex:2"></span>
+          <span class="g3" style="flex:2"></span>
+          <span class="g4" style="flex:2"></span>
+        </div>
+        <div class="gauge-labels">
+          <span>0% sheath area</span>
+          <span>Increasing severity</span>
+          <span>100% sheath area</span>
+        </div>
+
+        <div class="risk-cards">
+          <div class="risk-card">
+            <div class="swatch" style="background:var(--green)"></div>
+            <h4>LOW</h4>
+            <p>No or trace lesions detected. Continue routine monitoring, no intervention needed.</p>
+          </div>
+          <div class="risk-card">
+            <div class="swatch" style="background:var(--tan)"></div>
+            <h4>MODERATE</h4>
+            <p>Early lesions confirmed on lower sheaths. Increase scouting frequency, reduce canopy density where possible.</p>
+          </div>
+          <div class="risk-card">
+            <div class="swatch" style="background:var(--rust)"></div>
+            <h4>HIGH</h4>
+            <p>Lesions spreading upward and merging. Targeted fungicide application recommended, timed to growth stage.</p>
+          </div>
+          <div class="risk-card">
+            <div class="swatch" style="background:#7a3418"></div>
+            <h4>SEVERE</h4>
+            <p>Extensive canopy involvement. Urgent treatment advised, with follow-up capture to confirm response.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHODOLOGY -->
+  <section class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">Methodology</div>
+      <h2>Built for the messiness of a real field</h2>
+      <p>Agricultural image data is noisy by nature — variable light, occlusion, and limited labeled examples. The approach is designed around those constraints from the start.</p>
+    </div>
+    <div class="method-list">
+      <div class="method-item">
+        <h4>Dataset</h4>
+        <p>Field images collected across growth stages, lighting conditions, and severity levels, annotated with guidance from plant pathology expertise to keep labels reliable.</p>
+      </div>
+      <div class="method-item">
+        <h4>Model architecture</h4>
+        <p>Transfer learning on established convolutional architectures, fine-tuned for lesion detection and classification rather than trained from scratch on a small dataset.</p>
+      </div>
+      <div class="method-item">
+        <h4>Augmentation</h4>
+        <p>Synthetic variation in brightness, angle, and occlusion during training so the model generalizes beyond the exact conditions it was photographed in.</p>
+      </div>
+      <div class="method-item">
+        <h4>Evaluation</h4>
+        <p>Standard detection and classification metrics — precision, recall, F1, and localization accuracy — validated against held-out field images, not just training data.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMPACT -->
+  <section id="impact" class="wrap reveal">
+    <div class="section-head">
+      <div class="eyebrow">Why It Matters</div>
+      <h2>What earlier, clearer detection changes</h2>
+    </div>
+    <div class="impact-grid">
+      <div class="impact-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" stroke-linecap="round"/></svg>
+        <h4>Earlier intervention</h4>
+        <p>Catching lesions while they're still confined to lower sheaths keeps the response window open.</p>
+      </div>
+      <div class="impact-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round"/></svg>
+        <h4>Protected yield</h4>
+        <p>Managing outbreaks before they merge and climb the plant limits the loss they translate into.</p>
+      </div>
+      <div class="impact-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h4>Targeted treatment</h4>
+        <p>Recommendations scale to severity, so fungicide use is proportionate instead of routine.</p>
+      </div>
+      <div class="impact-card">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>
+        <h4>A record over the season</h4>
+        <p>Logged detections turn one-off inspections into a field history that scouting alone doesn't keep.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRY THE SCANNER -->
+  <section id="try" class="wrap reveal">
+    <div class="try-grid">
+      <div>
+        <div class="section-head" style="margin-bottom:28px;">
+          <div class="eyebrow">Try It</div>
+          <h2>Open the RSB Vision Scanner on your phone</h2>
+          <p>Scan the code to launch the web app, then point your camera at a rice plant to check for sheath blight.</p>
+        </div>
+        <ol class="try-steps">
+          <li><span><strong>Scan the QR code</strong> with your phone's camera app.</span></li>
+          <li><span><strong>Allow camera access</strong> when your browser asks.</span></li>
+          <li><span><strong>Point at the lower sheaths</strong> of the plant and read the result.</span></li>
+        </ol>
+        <div class="try-cta">
+          <!-- Link target = the address stored inside the QR code. Replace if your scanner's direct URL changes. -->
+          <a class="btn btn-primary" href="https://qr.generatorqr.com/AkKzctq3H" target="_blank" rel="noopener">Open the scanner →</a>
+          <span class="try-note">On a phone already? Tap the button instead.</span>
+        </div>
+      </div>
+
+      <div class="qr-card">
+        <div class="qr-frame">
+          <i></i><i></i><i></i><i></i>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" width="300" height="300" shape-rendering="crispEdges" role="img" aria-label="QR code that opens the RSB Vision Scanner App"><rect width="37" height="37" fill="#fff"/><g fill="#000"><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="19" y="4" width="1" height="1"/><rect x="21" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="23" y="4" width="1" height="1"/><rect x="26" y="4" width="1" height="1"/><rect x="27" y="4" width="1" height="1"/><rect x="28" y="4" width="1" height="1"/><rect x="29" y="4" width="1" height="1"/><rect x="30" y="4" width="1" height="1"/><rect x="31" y="4" width="1" height="1"/><rect x="32" y="4" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="17" y="5" width="1" height="1"/><rect x="22" y="5" width="1" height="1"/><rect x="24" y="5" width="1" height="1"/><rect x="26" y="5" width="1" height="1"/><rect x="32" y="5" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="26" y="6" width="1" height="1"/><rect x="28" y="6" width="1" height="1"/><rect x="29" y="6" width="1" height="1"/><rect x="30" y="6" width="1" height="1"/><rect x="32" y="6" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="7" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="12" y="7" width="1" height="1"/><rect x="15" y="7" width="1" height="1"/><rect x="16" y="7" width="1" height="1"/><rect x="18" y="7" width="1" height="1"/><rect x="21" y="7" width="1" height="1"/><rect x="24" y="7" width="1" height="1"/><rect x="26" y="7" width="1" height="1"/><rect x="28" y="7" width="1" height="1"/><rect x="29" y="7" width="1" height="1"/><rect x="30" y="7" width="1" height="1"/><rect x="32" y="7" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="21" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="26" y="8" width="1" height="1"/><rect x="28" y="8" width="1" height="1"/><rect x="29" y="8" width="1" height="1"/><rect x="30" y="8" width="1" height="1"/><rect x="32" y="8" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="17" y="9" width="1" height="1"/><rect x="21" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="26" y="9" width="1" height="1"/><rect x="32" y="9" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="7" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="14" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="26" y="10" width="1" height="1"/><rect x="27" y="10" width="1" height="1"/><rect x="28" y="10" width="1" height="1"/><rect x="29" y="10" width="1" height="1"/><rect x="30" y="10" width="1" height="1"/><rect x="31" y="10" width="1" height="1"/><rect x="32" y="10" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="14" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="19" y="11" width="1" height="1"/><rect x="21" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="24" y="11" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="23" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="26" y="12" width="1" height="1"/><rect x="29" y="12" width="1" height="1"/><rect x="31" y="12" width="1" height="1"/><rect x="32" y="12" width="1" height="1"/><rect x="7" y="13" width="1" height="1"/><rect x="12" y="13" width="1" height="1"/><rect x="13" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="17" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="21" y="13" width="1" height="1"/><rect x="22" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="25" y="13" width="1" height="1"/><rect x="26" y="13" width="1" height="1"/><rect x="27" y="13" width="1" height="1"/><rect x="28" y="13" width="1" height="1"/><rect x="32" y="13" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="25" y="14" width="1" height="1"/><rect x="28" y="14" width="1" height="1"/><rect x="30" y="14" width="1" height="1"/><rect x="31" y="14" width="1" height="1"/><rect x="4" y="15" width="1" height="1"/><rect x="5" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="20" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="25" y="15" width="1" height="1"/><rect x="26" y="15" width="1" height="1"/><rect x="27" y="15" width="1" height="1"/><rect x="32" y="15" width="1" height="1"/><rect x="4" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="11" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="18" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="29" y="16" width="1" height="1"/><rect x="30" y="16" width="1" height="1"/><rect x="4" y="17" width="1" height="1"/><rect x="6" y="17" width="1" height="1"/><rect x="8" y="17" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="15" y="17" width="1" height="1"/><rect x="18" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="20" y="17" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="26" y="17" width="1" height="1"/><rect x="30" y="17" width="1" height="1"/><rect x="31" y="17" width="1" height="1"/><rect x="32" y="17" width="1" height="1"/><rect x="5" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="7" y="18" width="1" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="22" y="18" width="1" height="1"/><rect x="23" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="25" y="18" width="1" height="1"/><rect x="28" y="18" width="1" height="1"/><rect x="30" y="18" width="1" height="1"/><rect x="31" y="18" width="1" height="1"/><rect x="32" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="19" y="19" width="1" height="1"/><rect x="20" y="19" width="1" height="1"/><rect x="23" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="25" y="19" width="1" height="1"/><rect x="26" y="19" width="1" height="1"/><rect x="27" y="19" width="1" height="1"/><rect x="31" y="19" width="1" height="1"/><rect x="5" y="20" width="1" height="1"/><rect x="6" y="20" width="1" height="1"/><rect x="7" y="20" width="1" height="1"/><rect x="9" y="20" width="1" height="1"/><rect x="10" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="18" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="25" y="20" width="1" height="1"/><rect x="27" y="20" width="1" height="1"/><rect x="28" y="20" width="1" height="1"/><rect x="29" y="20" width="1" height="1"/><rect x="31" y="20" width="1" height="1"/><rect x="6" y="21" width="1" height="1"/><rect x="7" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="13" y="21" width="1" height="1"/><rect x="15" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="29" y="21" width="1" height="1"/><rect x="30" y="21" width="1" height="1"/><rect x="31" y="21" width="1" height="1"/><rect x="4" y="22" width="1" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="10" y="22" width="1" height="1"/><rect x="12" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/><rect x="17" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="20" y="22" width="1" height="1"/><rect x="21" y="22" width="1" height="1"/><rect x="30" y="22" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="25" y="23" width="1" height="1"/><rect x="27" y="23" width="1" height="1"/><rect x="30" y="23" width="1" height="1"/><rect x="5" y="24" width="1" height="1"/><rect x="7" y="24" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="11" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="25" y="24" width="1" height="1"/><rect x="26" y="24" width="1" height="1"/><rect x="27" y="24" width="1" height="1"/><rect x="28" y="24" width="1" height="1"/><rect x="29" y="24" width="1" height="1"/><rect x="30" y="24" width="1" height="1"/><rect x="12" y="25" width="1" height="1"/><rect x="15" y="25" width="1" height="1"/><rect x="16" y="25" width="1" height="1"/><rect x="20" y="25" width="1" height="1"/><rect x="22" y="25" width="1" height="1"/><rect x="23" y="25" width="1" height="1"/><rect x="24" y="25" width="1" height="1"/><rect x="28" y="25" width="1" height="1"/><rect x="29" y="25" width="1" height="1"/><rect x="30" y="25" width="1" height="1"/><rect x="31" y="25" width="1" height="1"/><rect x="32" y="25" width="1" height="1"/><rect x="4" y="26" width="1" height="1"/><rect x="5" y="26" width="1" height="1"/><rect x="6" y="26" width="1" height="1"/><rect x="7" y="26" width="1" height="1"/><rect x="8" y="26" width="1" height="1"/><rect x="9" y="26" width="1" height="1"/><rect x="10" y="26" width="1" height="1"/><rect x="12" y="26" width="1" height="1"/><rect x="13" y="26" width="1" height="1"/><rect x="16" y="26" width="1" height="1"/><rect x="18" y="26" width="1" height="1"/><rect x="21" y="26" width="1" height="1"/><rect x="23" y="26" width="1" height="1"/><rect x="24" y="26" width="1" height="1"/><rect x="26" y="26" width="1" height="1"/><rect x="28" y="26" width="1" height="1"/><rect x="29" y="26" width="1" height="1"/><rect x="31" y="26" width="1" height="1"/><rect x="4" y="27" width="1" height="1"/><rect x="10" y="27" width="1" height="1"/><rect x="12" y="27" width="1" height="1"/><rect x="13" y="27" width="1" height="1"/><rect x="15" y="27" width="1" height="1"/><rect x="17" y="27" width="1" height="1"/><rect x="18" y="27" width="1" height="1"/><rect x="19" y="27" width="1" height="1"/><rect x="20" y="27" width="1" height="1"/><rect x="22" y="27" width="1" height="1"/><rect x="24" y="27" width="1" height="1"/><rect x="28" y="27" width="1" height="1"/><rect x="29" y="27" width="1" height="1"/><rect x="32" y="27" width="1" height="1"/><rect x="4" y="28" width="1" height="1"/><rect x="6" y="28" width="1" height="1"/><rect x="7" y="28" width="1" height="1"/><rect x="8" y="28" width="1" height="1"/><rect x="10" y="28" width="1" height="1"/><rect x="15" y="28" width="1" height="1"/><rect x="16" y="28" width="1" height="1"/><rect x="20" y="28" width="1" height="1"/><rect x="21" y="28" width="1" height="1"/><rect x="24" y="28" width="1" height="1"/><rect x="25" y="28" width="1" height="1"/><rect x="26" y="28" width="1" height="1"/><rect x="27" y="28" width="1" height="1"/><rect x="28" y="28" width="1" height="1"/><rect x="30" y="28" width="1" height="1"/><rect x="4" y="29" width="1" height="1"/><rect x="6" y="29" width="1" height="1"/><rect x="7" y="29" width="1" height="1"/><rect x="8" y="29" width="1" height="1"/><rect x="10" y="29" width="1" height="1"/><rect x="12" y="29" width="1" height="1"/><rect x="13" y="29" width="1" height="1"/><rect x="16" y="29" width="1" height="1"/><rect x="17" y="29" width="1" height="1"/><rect x="19" y="29" width="1" height="1"/><rect x="20" y="29" width="1" height="1"/><rect x="23" y="29" width="1" height="1"/><rect x="24" y="29" width="1" height="1"/><rect x="25" y="29" width="1" height="1"/><rect x="28" y="29" width="1" height="1"/><rect x="29" y="29" width="1" height="1"/><rect x="32" y="29" width="1" height="1"/><rect x="4" y="30" width="1" height="1"/><rect x="6" y="30" width="1" height="1"/><rect x="7" y="30" width="1" height="1"/><rect x="8" y="30" width="1" height="1"/><rect x="10" y="30" width="1" height="1"/><rect x="12" y="30" width="1" height="1"/><rect x="13" y="30" width="1" height="1"/><rect x="18" y="30" width="1" height="1"/><rect x="21" y="30" width="1" height="1"/><rect x="23" y="30" width="1" height="1"/><rect x="25" y="30" width="1" height="1"/><rect x="27" y="30" width="1" height="1"/><rect x="30" y="30" width="1" height="1"/><rect x="32" y="30" width="1" height="1"/><rect x="4" y="31" width="1" height="1"/><rect x="10" y="31" width="1" height="1"/><rect x="13" y="31" width="1" height="1"/><rect x="14" y="31" width="1" height="1"/><rect x="16" y="31" width="1" height="1"/><rect x="17" y="31" width="1" height="1"/><rect x="18" y="31" width="1" height="1"/><rect x="24" y="31" width="1" height="1"/><rect x="25" y="31" width="1" height="1"/><rect x="27" y="31" width="1" height="1"/><rect x="28" y="31" width="1" height="1"/><rect x="29" y="31" width="1" height="1"/><rect x="31" y="31" width="1" height="1"/><rect x="4" y="32" width="1" height="1"/><rect x="5" y="32" width="1" height="1"/><rect x="6" y="32" width="1" height="1"/><rect x="7" y="32" width="1" height="1"/><rect x="8" y="32" width="1" height="1"/><rect x="9" y="32" width="1" height="1"/><rect x="10" y="32" width="1" height="1"/><rect x="12" y="32" width="1" height="1"/><rect x="13" y="32" width="1" height="1"/><rect x="14" y="32" width="1" height="1"/><rect x="17" y="32" width="1" height="1"/><rect x="18" y="32" width="1" height="1"/><rect x="19" y="32" width="1" height="1"/><rect x="21" y="32" width="1" height="1"/><rect x="22" y="32" width="1" height="1"/><rect x="23" y="32" width="1" height="1"/><rect x="24" y="32" width="1" height="1"/><rect x="26" y="32" width="1" height="1"/><rect x="27" y="32" width="1" height="1"/><rect x="29" y="32" width="1" height="1"/><rect x="31" y="32" width="1" height="1"/></g></svg>
+        </div>
+        <div class="qr-title">RSB Vision Scanner App</div>
+        <div class="qr-sub">Scan with your phone camera</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="footer-grid">
+    <div>
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="#7fa35c"/>
+          <ellipse cx="12" cy="14" rx="2.4" ry="3.4" fill="#d8b978" opacity="0.85"/>
+        </svg>
+        <b>RSB&#8209;Vision</b>
+      </div>
+      <p>An applied research project on AI-based image recognition and decision support for early detection and management of rice sheath blight.</p>
+    </div>
+    <div class="footer-note">Research &amp; development project · figures on sheath blight impact are drawn from general plant-pathology literature, not project field results.</div>
+  </div>
+</footer>
+
+<script>
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
